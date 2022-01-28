@@ -18,7 +18,7 @@ from followthemoney.types.common import PropertyType
 # * generate CSV files
 # * fill out template for CSV files
 
-ENTITY_LABEL = "FtmEntity"
+ENTITY_LABEL = "Entity"
 
 export_path = Path("data/exports").resolve()
 export_path.mkdir(exist_ok=True, parents=True)
@@ -30,6 +30,7 @@ TYPES_INLINE = (
     registry.name,
     registry.date,
     registry.identifier,
+    registry.country,
 )
 
 TYPES_REIFY = (
@@ -155,13 +156,14 @@ def handle_node_value(proxy: EntityProxy, type: PropertyType, value: str):
 
 def handle_node_proxy(proxy: EntityProxy):
     row = {"id": proxy.id, "caption": proxy.caption}
+    featured = proxy.schema.featured
     for prop in proxy.schema.sorted_properties:
         if prop.hidden:
             continue
         if prop.type.matchable and not prop.matchable:
             continue
         values = proxy.get(prop)
-        if prop.name in proxy.schema.featured:
+        if prop.name in featured or prop.type in TYPES_INLINE:
             full_value = prop.type.join(values)
             row[prop.name] = full_value
 
@@ -212,37 +214,36 @@ def handle_edge_proxy(proxy: EntityProxy):
     source_prop = proxy.schema.source_prop
     if source_prop is None:
         return
-    sources = proxy.get(source_prop)
-    assert len(sources) == 1
     target_prop = proxy.schema.target_prop
     if target_prop is None:
         return
+
+    sources = proxy.get(source_prop)
     targets = proxy.get(target_prop)
-    assert len(targets) == 1
-    row = {
-        # "id": proxy.id,
-        "source_id": sources[0],
-        "target_id": targets[0],
-        "caption": proxy.caption,
-    }
-    for prop_name in proxy.schema.featured:
-        prop = proxy.schema.get(prop_name)
-        if prop is None:
-            continue
-        if prop == proxy.schema.source_prop:
-            continue
-        if prop == proxy.schema.target_prop:
-            continue
-        value = prop.type.join(proxy.get(prop))
-        row[prop.name] = value
-    label = stringcase.constcase(proxy.schema.name)
-    emit_label_row(
-        row,
-        label,
-        is_edge=True,
-        source_label=ENTITY_LABEL,
-        target_label=ENTITY_LABEL,
-    )
+    for source in sources:
+        for target in targets:
+            row = {
+                # "id": proxy.id,
+                "source_id": source,
+                "target_id": target,
+                "caption": proxy.caption,
+            }
+            for prop_name in proxy.schema.featured:
+                prop = proxy.schema.get(prop_name)
+                if prop is None:
+                    continue
+                if prop == source_prop or prop == target_prop:
+                    continue
+                value = prop.type.join(proxy.get(prop))
+                row[prop.name] = value
+            label = stringcase.constcase(proxy.schema.name)
+            emit_label_row(
+                row,
+                label,
+                is_edge=True,
+                source_label=ENTITY_LABEL,
+                target_label=ENTITY_LABEL,
+            )
 
 
 def handle_entity(proxy: EntityProxy):
@@ -282,12 +283,12 @@ def read_entity_file(file_path):
                 fh.write("\n")
 
         # TODO: prune useless nodes and labels
-        for type in TYPES_REIFY:
-            fh.write(
-                f"MATCH (n:{type.name}) WHERE size((n)--()) <= 1 DETACH DELETE (n);"
-            )
-        fh.write(f"MATCH (n:{ENTITY_LABEL}) REMOVE n:{ENTITY_LABEL};")
+        # for type in TYPES_REIFY:
+        #     fh.write(
+        #         f"MATCH (n:{type.name}) WHERE size((n)--()) <= 1 DETACH DELETE (n);"
+        #     )
+        # fh.write(f"MATCH (n:{ENTITY_LABEL}) REMOVE n:{ENTITY_LABEL};")
 
 
 if __name__ == "__main__":
-    read_entity_file("/Users/pudo/Data/entities.ftm.json")
+    read_entity_file("data/full.json")
