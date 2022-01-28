@@ -1,0 +1,2 @@
+followthemoney>=2.8.0
+stringcase

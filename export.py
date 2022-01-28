@@ -1,8 +1,11 @@
 import io
+import csv
 import json
+import stringcase
 from typing import Dict
+from pathlib import Path
+from pprint import pprint
 from followthemoney import model
-from followthemoney.schema import Schema
 from followthemoney.proxy import EntityProxy
 from followthemoney.types import registry
 
@@ -11,6 +14,10 @@ from followthemoney.types import registry
 # * turn some properties into labels: topics, offshore
 # * generate CSV files
 # * fill out template for CSV files
+
+export_path = Path("data/exports").resolve()
+export_path.mkdir(exist_ok=True, parents=True)
+
 
 TYPES_INLINE = (
     registry.name,
@@ -27,19 +34,43 @@ TYPES_REIFY = (
 )
 
 
-class Label(object):
+class LabelWriter(object):
     def __init__(self, label, columns, extra_labels=None):
         self.label = label
         self.columns = columns
         self.extra_labels = extra_labels
+        self.seen_ids = set()
+
+        file_name = export_path.joinpath(f"%s.csv" % label)
+        self.fh = open(file_name, "w")
+        self.writer = csv.DictWriter(self.fh, fieldnames=columns)
+        self.writer.writeheader()
+
+    def write(self, row):
+        obj_id = row["id"]
+        if obj_id in self.seen_ids:
+            return
+        self.seen_ids.add(obj_id)
+        self.writer.writerow(row)
+
+    def close(self):
+        self.fh.close()
 
 
-value_nodes = set()
-files: Dict[str, io.TextIOWrapper] = {}
+writers: Dict[str, LabelWriter] = {}
+
+
+def emit_label_row(row, label, extra_labels=None):
+    if label not in writers:
+        columns = list(row.keys())
+        writer = LabelWriter(label, columns, extra_labels=extra_labels)
+        writers[label] = writer
+    # row["_label"] = label
+    # pprint(row)
+    writers[label].write(row)
 
 
 def handle_node_proxy(proxy: EntityProxy):
-    return
     row = {"id": proxy.id, "caption": proxy.caption}
     for prop in proxy.schema.sorted_properties:
         if prop.hidden:
@@ -52,10 +83,21 @@ def handle_node_proxy(proxy: EntityProxy):
             row[prop.name] = full_value
 
         # TODO: reify value nodes
+        # if prop.type in TYPES_REIFY:
+        #     pass
 
-    print(row)
-    # if prop.type in TYPES_REIFY:
-    #     pass
+    schemata = [s for s in proxy.schema.schemata if not s.abstract]
+    extra_labels = [s.name for s in schemata if s != proxy.schema]
+    emit_label_row(row, proxy.schema.name, extra_labels=extra_labels)
+
+    # TODO: make topics into extra labels
+    topics = proxy.get_type_values(registry.topic)
+    for topic in topics:
+        topic_label = stringcase.pascalcase(registry.topic.caption(topic))
+        if topic_label is None:
+            continue
+        topic_row = {"id": proxy.id, "caption": proxy.caption}
+        emit_label_row(topic_row, topic_label)
 
 
 def handle_edge_proxy(proxy: EntityProxy):
@@ -63,7 +105,12 @@ def handle_edge_proxy(proxy: EntityProxy):
     assert len(sources) == 1
     targets = proxy.get(proxy.schema.target_prop)
     assert len(targets) == 1
-    row = {"source_id": sources[0], "target_id": targets[0], "caption": proxy.caption}
+    row = {
+        "id": proxy.id,
+        "source_id": sources[0],
+        "target_id": targets[0],
+        "caption": proxy.caption,
+    }
     for prop_name in proxy.schema.featured:
         prop = proxy.schema.get(prop_name)
         if prop is None:
@@ -74,7 +121,8 @@ def handle_edge_proxy(proxy: EntityProxy):
             continue
         value = prop.type.join(proxy.get(prop))
         row[prop.name] = value
-    print(row)
+    label = stringcase.constcase(proxy.schema.name)
+    emit_label_row(row, label)
 
 
 def handle_entity(proxy: EntityProxy):
@@ -90,6 +138,9 @@ def read_entity_file(file_path):
             raw = json.loads(line)
             proxy = model.get_proxy(raw)
             handle_entity(proxy)
+
+    for writer in writers.values():
+        writer.close()
 
 
 if __name__ == "__main__":
