@@ -8,6 +8,7 @@ from pprint import pprint
 from followthemoney import model
 from followthemoney.proxy import EntityProxy
 from followthemoney.types import registry
+from followthemoney.types.common import PropertyType
 
 # * build standard FtM graph
 # * reify most node types: countries, phones, emails, etc.
@@ -47,7 +48,9 @@ class LabelWriter(object):
         self.writer.writeheader()
 
     def write(self, row):
-        obj_id = row["id"]
+        obj_id = row.get("id")
+        if obj_id is None:
+            obj_id = (row["source_id"], row["target_id"])
         if obj_id in self.seen_ids:
             return
         self.seen_ids.add(obj_id)
@@ -65,9 +68,18 @@ def emit_label_row(row, label, extra_labels=None):
         columns = list(row.keys())
         writer = LabelWriter(label, columns, extra_labels=extra_labels)
         writers[label] = writer
-    # row["_label"] = label
-    # pprint(row)
     writers[label].write(row)
+
+
+def handle_node_value(proxy: EntityProxy, type: PropertyType, value: str):
+    node_id = type.node_id_safe(value)
+    if node_id is None:
+        return
+    node_row = {"id": node_id, "caption": type.caption(value)}
+    emit_label_row(node_row, type.name)
+
+    link_row = {"source_id": proxy.id, "target_id": node_id}
+    emit_label_row(link_row, stringcase.constcase(type.name))
 
 
 def handle_node_proxy(proxy: EntityProxy):
@@ -83,8 +95,9 @@ def handle_node_proxy(proxy: EntityProxy):
             row[prop.name] = full_value
 
         # TODO: reify value nodes
-        # if prop.type in TYPES_REIFY:
-        #     pass
+        if prop.type in TYPES_REIFY:
+            for value in values:
+                handle_node_value(proxy, prop.type, value)
 
     schemata = [s for s in proxy.schema.schemata if not s.abstract]
     extra_labels = [s.name for s in schemata if s != proxy.schema]
@@ -106,7 +119,7 @@ def handle_edge_proxy(proxy: EntityProxy):
     targets = proxy.get(proxy.schema.target_prop)
     assert len(targets) == 1
     row = {
-        "id": proxy.id,
+        # "id": proxy.id,
         "source_id": sources[0],
         "target_id": targets[0],
         "caption": proxy.caption,
