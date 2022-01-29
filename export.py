@@ -1,9 +1,9 @@
-from cProfile import label
 import io
 import csv
 import json
 import stringcase
-from typing import Dict, List, Optional, Set, Tuple, Union
+from normality import collapse_spaces
+from typing import Dict, List, Optional, Set
 from pathlib import Path
 from pprint import pprint
 from followthemoney import model
@@ -66,7 +66,13 @@ class LabelWriter(object):
 
         file_path = export_path.joinpath(self.file_name)
         self.fh = open(file_path, "w")
-        self.writer = csv.DictWriter(self.fh, fieldnames=columns)
+        self.writer = csv.DictWriter(
+            self.fh,
+            fieldnames=columns,
+            dialect=csv.unix_dialect,
+            escapechar="\\",
+            doublequote=False,
+        )
         self.writer.writeheader()
 
     def write(self, row: Dict[str, str]):
@@ -77,7 +83,11 @@ class LabelWriter(object):
         if obj_id in self.seen_ids:
             return
         self.seen_ids.add(obj_id)
-        self.writer.writerow(row)
+        cleaned: Dict[str, str] = {}
+        for key, value in row.items():
+            value = value.strip("\\")
+            cleaned[key] = collapse_spaces(value)[:10000]
+        self.writer.writerow(cleaned)
 
     def close(self):
         self.fh.close()
@@ -106,7 +116,8 @@ class LabelWriter(object):
         labels = self.get_all_labels("n")
         setters = self.get_setters("n")
         node_label = f":{self.node_label}" if self.node_label else ""
-        return f"""LOAD CSV WITH HEADERS FROM '{prefix}/{self.file_name}' AS row
+        return f""":auto USING PERIODIC COMMIT 5000
+            LOAD CSV WITH HEADERS FROM '{prefix}/{self.file_name}' AS row
             WITH row WHERE row.id IS NOT NULL
             MERGE (n{node_label} {'{'}id: row.id{'}'})
             {setters}
@@ -116,7 +127,8 @@ class LabelWriter(object):
         setters = self.get_setters("r")
         source_label = f":{self.source_label}" if self.source_label else ""
         target_label = f":{self.target_label}" if self.target_label else ""
-        return f"""LOAD CSV WITH HEADERS FROM '{prefix}/{self.file_name}' AS row
+        return f""":auto USING PERIODIC COMMIT 50000
+            LOAD CSV WITH HEADERS FROM '{prefix}/{self.file_name}' AS row
             WITH row WHERE row.source_id IS NOT NULL AND row.target_id IS NOT NULL
             MERGE (s{source_label} {'{'}id: row.source_id{'}'})
             MERGE (t{target_label} {'{'}id: row.target_id{'}'})
@@ -136,6 +148,10 @@ def emit_label_row(row, label, **kwargs):
 
 
 def handle_node_value(proxy: EntityProxy, type: PropertyType, value: str):
+    # filter out short identifiers?
+    if type == registry.identifier and len(value) < 7:
+        return
+
     node_id = type.node_id_safe(value)
     if node_id is None:
         return
@@ -282,11 +298,11 @@ def read_entity_file(file_path):
                 fh.write(load)
                 fh.write("\n")
 
-        # TODO: prune useless nodes and labels
-        # for type in TYPES_REIFY:
-        #     fh.write(
-        #         f"MATCH (n:{type.name}) WHERE size((n)--()) <= 1 DETACH DELETE (n);"
-        #     )
+        # prune useless nodes and labels
+        for type in TYPES_REIFY:
+            fh.write(
+                f"MATCH (n:{type.name}) WHERE size((n)--()) <= 1 DETACH DELETE (n);"
+            )
         # fh.write(f"MATCH (n:{ENTITY_LABEL}) REMOVE n:{ENTITY_LABEL};")
 
 
