@@ -36,7 +36,7 @@ TYPES_INLINE = (
 TYPES_REIFY = (
     registry.name,
     # registry.country,
-    registry.iban,
+    # registry.iban,
     registry.email,
     registry.phone,
     registry.identifier,
@@ -62,7 +62,8 @@ class LabelWriter(object):
         self.source_label = source_label
         self.target_label = target_label
         self.seen_ids: Set[str] = set()
-        self.file_name = f"%s.csv" % label
+        file_prefix = "edge" if is_edge else "node"
+        self.file_name = f"{file_prefix}_{label}.csv"
 
         file_path = export_path.joinpath(self.file_name)
         self.fh = open(file_path, "w")
@@ -76,17 +77,25 @@ class LabelWriter(object):
         self.writer.writeheader()
 
     def write(self, row: Dict[str, str]):
-        if self.is_edge:
-            obj_id = f"{row['source_id']}->{row['target_id']}"
-        else:
-            obj_id = row["id"]
-        if obj_id in self.seen_ids:
-            return
-        self.seen_ids.add(obj_id)
         cleaned: Dict[str, str] = {}
         for key, value in row.items():
             value = value.strip("\\")
-            cleaned[key] = collapse_spaces(value)[:10000]
+            value = value.replace("\0", "")
+            value = collapse_spaces(value)
+            if value is None:
+                value = ""
+            if key in ("id", "source_id", "target_id"):
+                value = value[:1000]
+            else:
+                value = value[:5000]
+            cleaned[key] = value
+        if self.is_edge:
+            obj_id = f"{cleaned['source_id']}->{cleaned['target_id']}"
+        else:
+            obj_id = cleaned["id"]
+        if obj_id in self.seen_ids:
+            return
+        self.seen_ids.add(obj_id)
         self.writer.writerow(cleaned)
 
     def close(self):
@@ -218,6 +227,9 @@ def handle_node_proxy(proxy: EntityProxy):
             continue
         topic_label = topic_label.replace(" ", "_")
         topic_label = stringcase.pascalcase(topic_label)
+        # Work-around to name overlap
+        if topic == "role.rca":
+            topic_label = "CloseAssociate"
         if topic_label is None:
             continue
         topic_row = {"id": proxy.id, "caption": proxy.caption}
@@ -301,7 +313,8 @@ def read_entity_file(file_path):
         # prune useless nodes and labels
         for type in TYPES_REIFY:
             fh.write(
-                f"MATCH (n:{type.name}) WHERE size((n)--()) <= 1 DETACH DELETE (n);"
+                f"MATCH (n:{type.name}) WHERE size((n)--()) <= 1 "
+                "DETACH DELETE (n);\n"
             )
         # fh.write(f"MATCH (n:{ENTITY_LABEL}) REMOVE n:{ENTITY_LABEL};")
 

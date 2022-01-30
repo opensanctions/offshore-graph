@@ -1,12 +1,16 @@
 # graph-demo
 Loading OpenSanctions into Neo4J and Linkurious
 
+## settings
 
+```
+dbms.transaction.concurrent.maximum = 0
+dbms.memory.heap.max_size=8g
+```
 
 ### queries
 
 MATCH (p:Politician),
       (o:Offshore),
-      p = shortestPath((p)-[*]-(o))
-WHERE length(p) > 1
-RETURN p
+      path = shortestPath((p)-[*]-(o))
+RETURN path;
