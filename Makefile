@@ -11,5 +11,7 @@ data/default.json: data
 data/offshore.json: data
 	wget -q -c -O data/offshore.json https://data.opensanctions.org/contrib/icij-offshoreleaks/full-oldb.json
 
+get-data: data/default.json data/offshore.json
+
 full: data/default.json data/offshore.json
 	python export.py -p https://data.opensanctions.org/contrib/offshore-graph/exports data/default.json data/offshore.json

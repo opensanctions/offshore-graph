@@ -1,5 +1,8 @@
 # graph-demo
+
 Loading OpenSanctions into Neo4J and Linkurious
+
+Load script: https://data.opensanctions.org/contrib/offshore-graph/exports/load.cypher
 
 ## settings
 

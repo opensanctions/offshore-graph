@@ -153,8 +153,12 @@ class GraphExporter(object):
         self.writers[label].write(row)
 
     def handle_node_value(self, proxy: EntityProxy, type: PropertyType, value: str):
-        # filter out short identifiers?
+        # filter out short identifiers:
         if type == registry.identifier and len(value) < 7:
+            return
+
+        # filter out names with no spaces:
+        if type == registry.name and " " not in value:
             return
 
         node_id = type.node_id_safe(value)
