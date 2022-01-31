@@ -279,6 +279,7 @@ class GraphExporter(object):
             self.handle_node_proxy(proxy)
 
     def read_entity_file(self, file_path):
+        log.info("Reading entity file: %s", file_path)
         with io.open(file_path) as fh:
             while line := fh.readline():
                 raw = json.loads(line)
