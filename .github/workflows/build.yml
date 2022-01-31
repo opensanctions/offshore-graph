@@ -1,0 +1,33 @@
+name: build
+
+on:
+  workflow_dispatch: {}
+
+jobs:
+  data:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v1
+      - name: Show ref
+        run: |
+          echo "$GITHUB_REF"
+      - name: Set up Python
+        uses: actions/setup-python@v1
+        with:
+          python-version: "3.9"
+      - name: Install dependencies
+        env:
+          DEBIAN_FRONTEND: noninteractive
+        run: |
+          sudo apt-get install -y -qq libicu-dev wget
+          pip install pyicu awscli
+          pip install -r requirements.txt
+      - name: Convert the data
+        run: |
+          make full
+      - name: Publish data to data.opensanctions.org
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        run: |
+          aws s3 cp --quiet --no-progress --cache-control "public, max-age=84600" --metadata-directive REPLACE --acl public-read data/exports s3://data.opensanctions.org/contrib/offshore-graph/exports
