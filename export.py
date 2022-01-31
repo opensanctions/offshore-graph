@@ -250,6 +250,8 @@ def handle_edge_proxy(proxy: EntityProxy):
     targets = proxy.get(target_prop)
     for source in sources:
         for target in targets:
+            if source == target:
+                continue
             row = {
                 # "id": proxy.id,
                 "source_id": source,

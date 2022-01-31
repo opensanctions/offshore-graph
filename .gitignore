@@ -12,6 +12,7 @@ build/
 develop-eggs/
 dist/
 data/
+linkurious-osx/
 downloads/
 eggs/
 .eggs/
