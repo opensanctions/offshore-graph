@@ -1,0 +1,150 @@
+{
+    "nodes": {
+        "CloseAssociate": {
+            "active": true,
+            "displayName": false,
+            "properties": [
+                "caption"
+            ]
+        },
+        "Entity": {
+            "active": true,
+            "displayName": false,
+            "properties": [
+                "caption"
+            ]
+        },
+        "LegalEntity": {
+            "active": true,
+            "displayName": false,
+            "properties": [
+                "caption"
+            ]
+        },
+        "Person": {
+            "active": true,
+            "displayName": false,
+            "properties": [
+                "caption"
+            ]
+        },
+        "Politician": {
+            "active": true,
+            "displayName": false,
+            "properties": [
+                "caption"
+            ]
+        },
+        "name": {
+            "active": true,
+            "displayName": false,
+            "properties": [
+                "caption"
+            ]
+        },
+        "Asset": {
+            "active": true,
+            "displayName": false,
+            "properties": [
+                "caption",
+                "name"
+            ]
+        },
+        "Company": {
+            "active": true,
+            "displayName": false,
+            "properties": [
+                "caption"
+            ]
+        },
+        "Offshore": {
+            "active": true,
+            "displayName": false,
+            "properties": [
+                "name"
+            ]
+        },
+        "Organization": {
+            "active": true,
+            "displayName": false,
+            "properties": [
+                "caption"
+            ]
+        },
+        "Crime": {
+            "active": true,
+            "displayName": false,
+            "properties": [
+                "caption"
+            ]
+        },
+        "NationalGovernment": {
+            "active": true,
+            "displayName": false,
+            "properties": [
+                "caption"
+            ]
+        },
+        "PublicBody": {
+            "active": true,
+            "displayName": false,
+            "properties": [
+                "caption"
+            ]
+        },
+        "PoliticalParty": {
+            "active": true,
+            "displayName": false,
+            "properties": [
+                "caption"
+            ]
+        }
+    },
+    "edges": {
+        "FAMILY": {
+            "active": true,
+            "displayName": false,
+            "properties": [
+                "caption"
+            ]
+        },
+        "HAS_NAME": {
+            "active": true,
+            "displayName": true,
+            "properties": []
+        },
+        "OWNERSHIP": {
+            "active": true,
+            "displayName": false,
+            "properties": [
+                "caption"
+            ]
+        },
+        "DIRECTORSHIP": {
+            "active": true,
+            "displayName": false,
+            "properties": [
+                "caption"
+            ]
+        },
+        "REPRESENTATION": {
+            "active": true,
+            "displayName": false,
+            "properties": [
+                "caption"
+            ]
+        },
+        "MEMBERSHIP": {
+            "active": true,
+            "displayName": false,
+            "properties": [
+                "caption"
+            ]
+        },
+        "undefined": {
+            "active": true,
+            "displayName": true,
+            "properties": []
+        }
+    }
+}

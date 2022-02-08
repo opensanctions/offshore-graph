@@ -1,0 +1,35 @@
+{
+    "node": [
+        {
+            "index": 0,
+            "type": "any",
+            "style": {
+                "color": {
+                    "type": "auto",
+                    "input": [
+                        "categories"
+                    ]
+                }
+            }
+        },
+        {
+            "index": 1,
+            "itemType": "Offshore",
+            "type": "any",
+            "style": {
+                "color": "#ff7f0e"
+            }
+        }
+    ],
+    "edge": [
+        {
+            "index": 2,
+            "itemType": "HAS_NAME",
+            "type": "any",
+            "style": {
+                "color": "#aec7e8"
+            }
+        }
+    ],
+    "edgeGroup": {}
+}
