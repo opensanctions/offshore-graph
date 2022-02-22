@@ -32,6 +32,7 @@ A query template that works for surprisingly many politicians:
 ```
 MATCH p = (n)-[*..5]-(b:Offshore)
 WHERE id(n) = {{"Node":node}}
+    AND NONE(x IN nodes(p)[1..-1] WHERE (x:Offshore))
 WITH  p, length(p) as score, n
 ORDER BY score ASC
 RETURN p, score, n
@@ -40,10 +41,11 @@ RETURN p, score, n
 And an alert template:
 
 ```
-MATCH p = (n:WarCrimes)-[*..5]-(b:Offshore)
-WITH  p, length(p) as score, n
+MATCH p = (s:SanctionedEntity {nationality: "ru"})-[*..5]-(t:Offshore)
+    WHERE NONE(x IN nodes(p)[1..-1] WHERE (x:PoliticalParty OR x:PublicBody OR x:Offshore))
+WITH  p, length(p) as score, s, t
 ORDER BY score ASC
-RETURN p, score, n
+RETURN p, score, s, t
 ```
 
 Custom actions:
