@@ -27,12 +27,32 @@ After the data has loaded into Neo4J, connect your [Linkurious instance](https:/
 
 ## Playing with the data
 
-```cypher
-MATCH (p:Politician),
-      (o:Offshore),
-      path = shortestPath((p)-[*]-(o))
-RETURN path;
+A query template that works for surprisingly many politicians:
+
 ```
+MATCH p = (n)-[*..5]-(b:Offshore)
+WHERE id(n) = {{"Node":node}}
+WITH  p, length(p) as score, n
+ORDER BY score ASC
+RETURN p, score, n
+```
+
+And an alert template:
+
+```
+MATCH p = (n:WarCrimes)-[*..5]-(b:Offshore)
+WITH  p, length(p) as score, n
+ORDER BY score ASC
+RETURN p, score, n
+```
+
+Custom actions:
+
+```
+https://offshoreleaks.icij.org/search?cat=2&e=&q={{node.caption}}&utf8=%E2%9C%93
+https://www.opensanctions.org/entities/{{node.id}}/
+```
+
 
 ## License
 

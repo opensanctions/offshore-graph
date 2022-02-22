@@ -46,8 +46,7 @@
             "active": true,
             "displayName": false,
             "properties": [
-                "caption",
-                "name"
+                "caption"
             ]
         },
         "Company": {
@@ -61,7 +60,7 @@
             "active": true,
             "displayName": false,
             "properties": [
-                "name"
+                "caption"
             ]
         },
         "Organization": {
@@ -98,6 +97,48 @@
             "properties": [
                 "caption"
             ]
+        },
+        "SanctionedEntity": {
+            "active": true,
+            "displayName": false,
+            "properties": [
+                "caption"
+            ]
+        },
+        "identifier": {
+            "active": true,
+            "displayName": false,
+            "properties": [
+                "caption"
+            ]
+        },
+        "Address": {
+            "active": true,
+            "displayName": false,
+            "properties": [
+                "caption"
+            ]
+        },
+        "Sanction": {
+            "active": true,
+            "displayName": false,
+            "properties": [
+                "caption"
+            ]
+        },
+        "Identification": {
+            "active": true,
+            "displayName": false,
+            "properties": [
+                "caption"
+            ]
+        },
+        "Passport": {
+            "active": true,
+            "displayName": false,
+            "properties": [
+                "caption"
+            ]
         }
     },
     "edges": {
@@ -111,7 +152,9 @@
         "HAS_NAME": {
             "active": true,
             "displayName": true,
-            "properties": []
+            "properties": [
+                "caption"
+            ]
         },
         "OWNERSHIP": {
             "active": true,
@@ -144,7 +187,44 @@
         "undefined": {
             "active": true,
             "displayName": true,
-            "properties": []
+            "properties": [
+                "caption"
+            ]
+        },
+        "UNKNOWN_LINK": {
+            "active": true,
+            "displayName": true,
+            "properties": [
+                "caption"
+            ]
+        },
+        "ADDRESS_ENTITY": {
+            "active": true,
+            "displayName": true,
+            "properties": [
+                "caption"
+            ]
+        },
+        "HAS_IDENTIFIER": {
+            "active": true,
+            "displayName": true,
+            "properties": [
+                "caption"
+            ]
+        },
+        "ENTITY": {
+            "active": true,
+            "displayName": true,
+            "properties": [
+                "caption"
+            ]
+        },
+        "ASSOCIATE": {
+            "active": true,
+            "displayName": true,
+            "properties": [
+                "caption"
+            ]
         }
     }
 }
