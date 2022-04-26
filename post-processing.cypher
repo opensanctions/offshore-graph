@@ -14,3 +14,16 @@ DETACH DELETE a;
 MATCH (a)
 WHERE ID(a) = 1377286
 DETACH DELETE a;
+
+//Delete blank properties
+CALL apoc.periodic.iterate(
+"MATCH (n) RETURN n",
+"WITH n
+UNWIND keys(n) as key
+WITH n, key WHERE n[key] = ''
+with n, collect(key) as propertyKeys limit 100
+CALL apoc.create.removeProperties(n, propertyKeys)
+yield node
+RETURN count(*)",
+{batchSize:10000, parallel:true}
+);
