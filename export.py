@@ -1,14 +1,15 @@
 import io
 import csv
 import json
-from os import PathLike
 import click
 import logging
 import stringcase
+from os import PathLike
 from normality import collapse_spaces
-from typing import Dict, List, Optional, Set
+from typing import Any, Dict, List, Optional, Set
 from pathlib import Path
 from followthemoney import model
+from followthemoney.model import Model
 from followthemoney.proxy import EntityProxy
 from followthemoney.types import registry
 from followthemoney.types.common import PropertyType
@@ -33,6 +34,17 @@ TYPES_REIFY = (
     registry.phone,
     registry.identifier,
 )
+
+
+class Entity(EntityProxy):
+    def __init__(self, model: Model, data: Dict[str, Any], cleaned: bool = True):
+        super().__init__(model, data, cleaned=cleaned)
+        self._caption: str = data.get("caption") or self.caption
+
+    def to_dict(self) -> Dict[str, Any]:
+        data = super().to_dict()
+        data["caption"] = self._caption
+        return data
 
 
 class LabelWriter(object):
@@ -152,7 +164,7 @@ class GraphExporter(object):
             self.writers[label] = writer
         self.writers[label].write(row)
 
-    def handle_node_value(self, proxy: EntityProxy, type: PropertyType, value: str):
+    def handle_node_value(self, proxy: Entity, type: PropertyType, value: str):
         # filter out short identifiers:
         if type == registry.identifier and len(value) < 7:
             return
@@ -178,7 +190,7 @@ class GraphExporter(object):
             target_label=type.name,
         )
 
-    def handle_node_proxy(self, proxy: EntityProxy):
+    def handle_node_proxy(self, proxy: Entity):
         row = {"id": proxy.id, "caption": proxy.caption}
         featured = proxy.schema.featured
         for prop in proxy.schema.sorted_properties:
@@ -186,6 +198,8 @@ class GraphExporter(object):
                 continue
             if prop.type.matchable and not prop.matchable:
                 continue
+            # if prop.name not in proxy.schema.featured:
+            #     continue
             values = proxy.get(prop)
             if prop.name in featured or prop.type in TYPES_INLINE:
                 full_value = prop.type.join(values)
@@ -239,7 +253,7 @@ class GraphExporter(object):
                 node_label=ENTITY_LABEL,
             )
 
-    def handle_edge_proxy(self, proxy: EntityProxy):
+    def handle_edge_proxy(self, proxy: Entity):
         source_prop = proxy.schema.source_prop
         if source_prop is None:
             return
@@ -276,7 +290,7 @@ class GraphExporter(object):
                     target_label=ENTITY_LABEL,
                 )
 
-    def handle_entity(self, proxy: EntityProxy):
+    def handle_entity(self, proxy: Entity):
         if proxy.schema.edge:
             self.handle_edge_proxy(proxy)
         else:
@@ -287,7 +301,7 @@ class GraphExporter(object):
         with io.open(file_path) as fh:
             while line := fh.readline():
                 raw = json.loads(line)
-                proxy = model.get_proxy(raw)
+                proxy = Entity.from_dict(model, raw)
                 self.handle_entity(proxy)
 
     def close_writers(self):
