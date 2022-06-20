@@ -329,11 +329,11 @@ class GraphExporter(object):
                     fh.write("\n")
 
             # prune useless nodes and labels
-            for type in TYPES_REIFY:
-                fh.write(
-                    f"MATCH (n:{type.name}) WHERE size((n)--()) <= 1 "
-                    "DETACH DELETE (n);\n"
-                )
+            # for type in TYPES_REIFY:
+            #     fh.write(
+            #         f"MATCH (n:{type.name}) WHERE size((n)--()) <= 1 "
+            #         "DETACH DELETE (n);\n"
+            #     )
             # fh.write(f"MATCH (n:{ENTITY_LABEL}) REMOVE n:{ENTITY_LABEL};")
 
 

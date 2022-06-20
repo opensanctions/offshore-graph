@@ -25,3 +25,8 @@ RETURN count(*)",{limit:10000});
 // Delete name nodes
 CALL apoc.periodic.commit("MATCH (n:identifier) WHERE size((n)--()) <= 1 WITH n LIMIT $limit DETACH DELETE (n) RETURN COUNT(*)",{limit:10000, batchSize:10000, parallel:true});
 CALL apoc.periodic.commit("MATCH (n:name) WHERE size((n)--()) <= 1 WITH n LIMIT $limit DETACH DELETE (n) RETURN COUNT(*)",{limit:10000, batchSize:10000, parallel:true});
+
+MATCH (n:name) WHERE size((n)--()) <= 1 DETACH DELETE (n);
+MATCH (n:email) WHERE size((n)--()) <= 1 DETACH DELETE (n);
+MATCH (n:phone) WHERE size((n)--()) <= 1 DETACH DELETE (n);
+MATCH (n:identifier) WHERE size((n)--()) <= 1 DETACH DELETE (n);
