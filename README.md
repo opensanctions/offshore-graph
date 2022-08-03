@@ -48,6 +48,23 @@ ORDER BY score ASC
 RETURN p, score, s, t
 ```
 
+Links between sanctioned entities and the laundromat core:
+
+```
+MATCH p = (s:SanctionedEntity)-[*..5]-(t:FinancialCrime)
+    WHERE NONE(x IN nodes(p)[1..-1] WHERE (x:FinancialCrime OR x:Address))
+WITH p LIMIT 10
+RETURN p;
+```
+
+```
+MATCH p = (s:Politician)-[*..4]-(t)-[:PAYMENT]-(c)
+    WHERE NONE(x IN nodes(p)[1..-1] WHERE (x:FinancialCrime OR x:Address))
+    AND NONE(y IN relationships(p)[1..-1] WHERE (y:PAYMENT))
+WITH p, length(p) as score, s, t, c LIMIT 100
+RETURN p, score, s, t, c;
+```
+
 Custom actions:
 
 ```

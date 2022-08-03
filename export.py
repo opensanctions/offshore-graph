@@ -126,7 +126,7 @@ class LabelWriter(object):
                 continue
             setter = f"SET {ref}.{column} = row.{column}"
             setters.append(setter)
-        return " ".join(setters)
+        return "\n            ".join(setters)
 
     def to_node_load(self, prefix):
         labels = self.get_all_labels("n")
