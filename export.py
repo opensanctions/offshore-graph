@@ -132,24 +132,28 @@ class LabelWriter(object):
         labels = self.get_all_labels("n")
         setters = self.get_setters("n")
         node_label = f":{self.node_label}" if self.node_label else ""
-        return f""":auto USING PERIODIC COMMIT 5000
+        return f"""
             LOAD CSV WITH HEADERS FROM '{prefix}/{self.file_name}' AS row
             WITH row WHERE row.id IS NOT NULL
-            MERGE (n{node_label} {'{'}id: row.id{'}'})
+            call {{ with row
+            MERGE (n{node_label} {{ id: row.id }})
             {setters}
-            {labels};"""
+            {labels}
+            }} in transactions of 50000 rows;"""
 
     def to_edge_load(self, prefix):
         setters = self.get_setters("r")
         source_label = f":{self.source_label}" if self.source_label else ""
         target_label = f":{self.target_label}" if self.target_label else ""
-        return f""":auto USING PERIODIC COMMIT 50000
+        return f"""
             LOAD CSV WITH HEADERS FROM '{prefix}/{self.file_name}' AS row
             WITH row WHERE row.source_id IS NOT NULL AND row.target_id IS NOT NULL
-            MERGE (s{source_label} {'{'}id: row.source_id{'}'})
-            MERGE (t{target_label} {'{'}id: row.target_id{'}'})
+            call {{ with row 
+            MATCH (s{source_label} {{id: row.source_id}})
+            MATCH (t{target_label} {{id: row.target_id}})
             MERGE (s)-[r:{self.label}]->(t)
-            {setters};"""
+            {setters}
+            }} in transactions of 50000 rows;"""
 
 
 class GraphExporter(object):
@@ -312,9 +316,13 @@ class GraphExporter(object):
         load_script = self.export_path.joinpath("load.cypher")
         with open(load_script, "w") as fh:
             # fh.write("MATCH (n) DETACH DELETE n;\n")
-            fh.write(f"CREATE INDEX IF NOT EXISTS FOR(n:{ENTITY_LABEL}) ON (n.id);\n")
+            fh.write(
+                f"CREATE CONSTRAINT entity_id IF NOT EXISTS FOR(n:{ENTITY_LABEL}) REQUIRE (n.id) IS UNIQUE;\n"
+            )
             for type in TYPES_REIFY:
-                fh.write(f"CREATE INDEX IF NOT EXISTS FOR(n:{type.name}) ON (n.id);\n")
+                fh.write(
+                    f"CREATE CONSTRAINT {type.name}_id IF NOT EXISTS FOR(n:{type.name}) REQUIRE (n.id) IS UNIQUE;\n"
+                )
 
             for writer in self.writers.values():
                 if not writer.is_edge:
@@ -329,11 +337,14 @@ class GraphExporter(object):
                     fh.write("\n")
 
             # prune useless nodes and labels
-            # for type in TYPES_REIFY:
-            #     fh.write(
-            #         f"MATCH (n:{type.name}) WHERE size((n)--()) <= 1 "
-            #         "DETACH DELETE (n);\n"
-            #     )
+            for type in TYPES_REIFY:
+                fh.write(
+                    f"MATCH (n:{type.name}) "
+                    + "WHERE count { (n)--() } <= 1 "
+                    + "call { with n "
+                    + "    DETACH DELETE (n) "
+                    + "} in transactions of 50000 rows;"
+                )
             # fh.write(f"MATCH (n:{ENTITY_LABEL}) REMOVE n:{ENTITY_LABEL};")
 
 
