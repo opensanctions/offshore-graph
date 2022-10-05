@@ -133,7 +133,7 @@ class LabelWriter(object):
         setters = self.get_setters("n")
         node_label = f":{self.node_label}" if self.node_label else ""
         return f"""
-            LOAD CSV WITH HEADERS FROM '{prefix}/{self.file_name}' AS row
+            :auto LOAD CSV WITH HEADERS FROM '{prefix}/{self.file_name}' AS row
             WITH row WHERE row.id IS NOT NULL
             call {{ with row
             MERGE (n{node_label} {{ id: row.id }})
@@ -146,7 +146,7 @@ class LabelWriter(object):
         source_label = f":{self.source_label}" if self.source_label else ""
         target_label = f":{self.target_label}" if self.target_label else ""
         return f"""
-            LOAD CSV WITH HEADERS FROM '{prefix}/{self.file_name}' AS row
+            :auto LOAD CSV WITH HEADERS FROM '{prefix}/{self.file_name}' AS row
             WITH row WHERE row.source_id IS NOT NULL AND row.target_id IS NOT NULL
             call {{ with row 
             MATCH (s{source_label} {{id: row.source_id}})
@@ -339,11 +339,11 @@ class GraphExporter(object):
             # prune useless nodes and labels
             for type in TYPES_REIFY:
                 fh.write(
-                    f"MATCH (n:{type.name}) "
-                    + "WHERE count { (n)--() } <= 1 "
+                    f":auto MATCH (n:{type.name}) "
+                    + "WHERE size((n)--()) <= 1 "
                     + "call { with n "
                     + "    DETACH DELETE (n) "
-                    + "} in transactions of 50000 rows;"
+                    + "} in transactions of 50000 rows;\n"
                 )
             # fh.write(f"MATCH (n:{ENTITY_LABEL}) REMOVE n:{ENTITY_LABEL};")
 
