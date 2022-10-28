@@ -66,7 +66,7 @@ class LabelWriter(object):
         self.node_label = node_label
         self.source_label = source_label
         self.target_label = target_label
-        self.seen_ids: Set[str] = set()
+        self.seen_ids: Set[int] = set()
         file_prefix = "edge" if is_edge else "node"
         self.file_name = f"{file_prefix}_{label}.csv"
 
@@ -98,9 +98,10 @@ class LabelWriter(object):
             obj_id = f"{cleaned['source_id']}->{cleaned['target_id']}"
         else:
             obj_id = cleaned["id"]
-        if obj_id in self.seen_ids:
+        hashed_id = hash(obj_id)
+        if hashed_id in self.seen_ids:
             return
-        self.seen_ids.add(obj_id)
+        self.seen_ids.add(hashed_id)
         if len(self.seen_ids) % 10000 == 0:
             log.info("[%s] %d rows written...", self.file_name, len(self.seen_ids))
         self.writer.writerow(cleaned)
