@@ -4,7 +4,7 @@ import json
 import click
 import logging
 import stringcase
-from os import PathLike
+from pathlib import Path
 from normality import collapse_spaces
 from typing import Any, Dict, List, Optional, Set
 from pathlib import Path
@@ -50,7 +50,7 @@ class Entity(EntityProxy):
 class LabelWriter(object):
     def __init__(
         self,
-        export_path: PathLike,
+        export_path: Path,
         label: str,
         columns: List[str],
         is_edge: bool = False,
@@ -66,7 +66,8 @@ class LabelWriter(object):
         self.node_label = node_label
         self.source_label = source_label
         self.target_label = target_label
-        self.seen_ids: Set[int] = set()
+        self.row_count = 0
+        # self.seen_ids: Set[int] = set()
         file_prefix = "edge" if is_edge else "node"
         self.file_name = f"{file_prefix}_{label}.csv"
 
@@ -86,9 +87,7 @@ class LabelWriter(object):
         for key, value in row.items():
             value = value.strip("\\")
             value = value.replace("\0", "")
-            value = collapse_spaces(value)
-            if value is None:
-                value = ""
+            value = collapse_spaces(value) or ""
             if key in ("id", "source_id", "target_id"):
                 value = value[:1000]
             else:
@@ -98,12 +97,9 @@ class LabelWriter(object):
             obj_id = f"{cleaned['source_id']}->{cleaned['target_id']}"
         else:
             obj_id = cleaned["id"]
-        hashed_id = hash(obj_id)
-        if hashed_id in self.seen_ids:
-            return
-        self.seen_ids.add(hashed_id)
-        if len(self.seen_ids) % 10000 == 0:
-            log.info("[%s] %d rows written...", self.file_name, len(self.seen_ids))
+        self.row_count += 1
+        if self.row_count % 10000 == 0:
+            log.info("[%s] %d rows written...", self.file_name, self.row_count)
         self.writer.writerow(cleaned)
 
     def close(self):
@@ -158,7 +154,7 @@ class LabelWriter(object):
 
 
 class GraphExporter(object):
-    def __init__(self, export_path: PathLike):
+    def __init__(self, export_path: Path):
         self.export_path = export_path
         self.writers: Dict[str, LabelWriter] = {}
 
@@ -305,6 +301,8 @@ class GraphExporter(object):
         log.info("Reading entity file: %s", file_path)
         with io.open(file_path) as fh:
             while line := fh.readline():
+                if not len(line):
+                    break
                 raw = json.loads(line)
                 proxy = Entity.from_dict(model, raw)
                 self.handle_entity(proxy)
