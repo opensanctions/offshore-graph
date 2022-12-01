@@ -37,8 +37,14 @@ dedupe:
 full: data/graph.json
 	python export.py -p https://data.opensanctions.org/contrib/offshore-graph/exports data/graph.json
 
+publish-full:
+	aws s3 sync --no-progress --cache-control "public, max-age=84600" --metadata-directive REPLACE --acl public-read data/exports s3://data.opensanctions.org/contrib/offshore-graph/exports
+
 oo: data/oo.json
 	python export.py -p https://data.opensanctions.org/contrib/offshore-graph/oo data/oo.json
+
+publish-oo:
+	aws s3 sync --no-progress --cache-control "public, max-age=84600" --metadata-directive REPLACE --acl public-read data/exports s3://data.opensanctions.org/contrib/offshore-graph/oo
 
 convert-dev: data/opensanctions.json 
 	python export.py -p http://localhost:9999/exports data/opensanctions.json
