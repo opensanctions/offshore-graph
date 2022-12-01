@@ -6,13 +6,14 @@ import logging
 import stringcase
 from pathlib import Path
 from normality import collapse_spaces
-from typing import Any, Dict, List, Optional, Set
+from typing import Any, Dict, List, Optional
 from pathlib import Path
 from followthemoney import model
 from followthemoney.model import Model
 from followthemoney.proxy import EntityProxy
 from followthemoney.types import registry
 from followthemoney.types.common import PropertyType
+from followthemoney.cli.util import path_entities
 
 log = logging.getLogger("make_graph")
 
@@ -192,7 +193,7 @@ class GraphExporter(object):
         )
 
     def handle_node_proxy(self, proxy: Entity):
-        row = {"id": proxy.id, "caption": proxy.caption}
+        row = {"id": proxy.id, "caption": proxy._caption}
         featured = proxy.schema.featured
         for prop in proxy.schema.sorted_properties:
             if prop.hidden:
@@ -246,7 +247,7 @@ class GraphExporter(object):
                 topic_label = "CloseAssociate"
             if topic_label is None:
                 continue
-            topic_row = {"id": proxy.id, "caption": proxy.caption}
+            topic_row = {"id": proxy.id, "caption": proxy._caption}
             self.emit_label_row(
                 topic_row,
                 topic_label,
@@ -272,7 +273,7 @@ class GraphExporter(object):
                     # "id": proxy.id,
                     "source_id": source,
                     "target_id": target,
-                    "caption": proxy.caption,
+                    "caption": proxy._caption,
                 }
                 for prop_name in proxy.schema.featured:
                     prop = proxy.schema.get(prop_name)
@@ -299,13 +300,8 @@ class GraphExporter(object):
 
     def read_entity_file(self, file_path):
         log.info("Reading entity file: %s", file_path)
-        with io.open(file_path) as fh:
-            while line := fh.readline():
-                if not len(line):
-                    break
-                raw = json.loads(line)
-                proxy = Entity.from_dict(model, raw)
-                self.handle_entity(proxy)
+        for proxy in path_entities(file_path, Entity):
+            self.handle_entity(proxy)
 
     def close_writers(self):
         for writer in self.writers.values():
@@ -363,7 +359,10 @@ def make_graph(out_path, prefix, source_files):
 
     exporter = GraphExporter(export_path)
     for source_file in source_files:
-        exporter.read_entity_file(source_file)
+        try:
+            exporter.read_entity_file(source_file)
+        except Exception:
+            log.exception("Failed to read file: %r" % source_file)
     exporter.close_writers()
     exporter.write_load_script(prefix)
 

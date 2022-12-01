@@ -37,6 +37,9 @@ dedupe:
 full: data/graph.json
 	python export.py -p https://data.opensanctions.org/contrib/offshore-graph/exports data/graph.json
 
+oo: data/oo.json
+	python export.py -p https://data.opensanctions.org/contrib/offshore-graph/oo data/oo.json
+
 convert-dev: data/opensanctions.json 
 	python export.py -p http://localhost:9999/exports data/opensanctions.json
 
