@@ -25,6 +25,24 @@ The simplest way to do this is to open the script in a text editor and copy and 
 
 After the data has loaded into Neo4J, connect your [Linkurious instance](https://doc.linkurio.us/admin-manual/latest/) to the instance. In the "Advanced" section of the "Global configuration", make sure to set ``indexationChunkSize`` to 500 (instead of the 5000 default value). You can also copy the contents of ``linkurious-captions.json`` and ``linkurious-styles.json`` into the relevant sections of the data source configuration dialog.
 
+## Fixme: cleanup
+
+```cypher
+//Clean orphan nodes
+:auto MATCH (n:identifier) WITH n, size([p=(n)--() | p]) as size WHERE size <= 1 call { with n     DETACH DELETE (n) } in transactions of 50000 rows;
+:auto MATCH (n:email) WITH n, size([p=(n)--() | p]) as size WHERE size <= 1 call { with n     DETACH DELETE (n) } in transactions of 50000 rows;
+:auto MATCH (n:phone) WITH n, size([p=(n)--() | p]) as size WHERE size <= 1 call { with n     DETACH DELETE (n) } in transactions of 50000 rows;
+:auto MATCH (n:name) WITH n, size([p=(n)--() | p]) as size WHERE size <= 1 call { with n     DETACH DELETE (n) } in transactions of 50000 rows;
+  
+// clean empty properties
+CALL apoc.periodic.iterate(
+  "MATCH (n) UNWIND keys(n) as k WITH n, k WHERE n[k] = '' RETURN n, k",
+  "WITH n, collect(k) as propertyKeys
+   CALL apoc.create.removeProperties(n, propertyKeys) YIELD node
+   RETURN node",
+  {batchSize:50000, parallel:true});
+```
+
 ## Playing with the data
 
 A query template that works for surprisingly many politicians:
@@ -53,6 +71,20 @@ Links between sanctioned entities and the laundromat core:
 ```
 MATCH p = (s:SanctionedEntity)-[*..5]-(t:FinancialCrime)
     WHERE NONE(x IN nodes(p)[1..-1] WHERE (x:FinancialCrime OR x:Address))
+WITH p LIMIT 10
+RETURN p;
+```
+
+```
+MATCH p = (s:SanctionedEntity)-[*..5]-(t:Offshore)
+    WHERE NONE(x IN nodes(p)[1..-1] WHERE (x:Offshore OR x:Address))
+WITH p LIMIT 10
+RETURN p;
+```
+
+```
+MATCH p = (s:Politican)-[*..5]-(t:Offshore)
+    WHERE NONE(x IN nodes(p)[1..-1] WHERE (x:Offshore OR x:Address))
 WITH p LIMIT 10
 RETURN p;
 ```

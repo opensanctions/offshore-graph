@@ -1,6 +1,4 @@
-import io
 import csv
-import json
 import click
 import logging
 import stringcase
@@ -334,12 +332,19 @@ class GraphExporter(object):
             # prune useless nodes and labels
             for type in TYPES_REIFY:
                 fh.write(
-                    f":auto MATCH (n:{type.name}) "
-                    + "WHERE size((n)--()) <= 1 "
-                    + "call { with n "
-                    + "    DETACH DELETE (n) "
-                    + "} in transactions of 50000 rows;\n"
+                    f":auto MATCH (n:{type.name}) WITH "
+                    + "n, size([p=(n)--() | p]) as size "
+                    + "WHERE size <= 1 call "
+                    + "{ with n DETACH DELETE (n) } "
+                    + "in transactions of 50000 rows;"
                 )
+                # fh.write(
+                #     f":auto MATCH (n:{type.name}) "
+                #     + "WHERE size((n)--()) <= 1 "
+                #     + "call { with n "
+                #     + "    DETACH DELETE (n) "
+                #     + "} in transactions of 50000 rows;\n"
+                # )
             # fh.write(f"MATCH (n:{ENTITY_LABEL}) REMOVE n:{ENTITY_LABEL};")
 
 
