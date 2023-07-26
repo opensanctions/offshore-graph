@@ -5,8 +5,6 @@ import stringcase
 from pathlib import Path
 from normality import collapse_spaces
 from typing import Any, Dict, List, Optional
-from pathlib import Path
-from followthemoney import model
 from followthemoney.model import Model
 from followthemoney.proxy import EntityProxy
 from followthemoney.types import registry
@@ -29,6 +27,7 @@ TYPES_REIFY = (
     registry.name,
     # registry.country,
     # registry.iban,
+    registry.url,
     registry.email,
     registry.phone,
     registry.identifier,
@@ -92,10 +91,10 @@ class LabelWriter(object):
             else:
                 value = value[:5000]
             cleaned[key] = value
-        if self.is_edge:
-            obj_id = f"{cleaned['source_id']}->{cleaned['target_id']}"
-        else:
-            obj_id = cleaned["id"]
+        # if self.is_edge:
+        #     obj_id = f"{cleaned['source_id']}->{cleaned['target_id']}"
+        # else:
+        #     obj_id = cleaned["id"]
         self.row_count += 1
         if self.row_count % 10000 == 0:
             log.info("[%s] %d rows written...", self.file_name, self.row_count)
@@ -191,7 +190,14 @@ class GraphExporter(object):
         )
 
     def handle_node_proxy(self, proxy: Entity):
-        row = {"id": proxy.id, "caption": proxy._caption}
+        row = {
+            "id": proxy.id,
+            "caption": proxy._caption,
+            "last_change": proxy.context.get("last_change"),
+            "source": "; ".join(proxy.context.get("datasets", [])),
+            "sourceID": "; ".join(proxy.context.get("referents", [])),
+        }
+
         featured = proxy.schema.featured
         for prop in proxy.schema.sorted_properties:
             if prop.hidden:
@@ -310,11 +316,13 @@ class GraphExporter(object):
         with open(load_script, "w") as fh:
             # fh.write("MATCH (n) DETACH DELETE n;\n")
             fh.write(
-                f"CREATE CONSTRAINT entity_id IF NOT EXISTS FOR(n:{ENTITY_LABEL}) REQUIRE (n.id) IS UNIQUE;\n"
+                f"CREATE CONSTRAINT entity_id IF NOT EXISTS FOR(n:{ENTITY_LABEL})"
+                " REQUIRE (n.id) IS UNIQUE;\n"
             )
             for type in TYPES_REIFY:
                 fh.write(
-                    f"CREATE CONSTRAINT {type.name}_id IF NOT EXISTS FOR(n:{type.name}) REQUIRE (n.id) IS UNIQUE;\n"
+                    f"CREATE CONSTRAINT {type.name}_id IF NOT EXISTS FOR(n:{type.name})"
+                    " REQUIRE (n.id) IS UNIQUE;\n"
                 )
 
             for writer in self.writers.values():
