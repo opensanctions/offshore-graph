@@ -193,12 +193,10 @@ class GraphExporter(object):
         row = {
             "id": proxy.id,
             "caption": proxy._caption,
+            "changedAt": proxy.context.get("last_change", ""),
             "source": "; ".join(proxy.context.get("datasets", [])),
             "sourceID": "; ".join(proxy.context.get("referents", [])),
         }
-        if "last_change" in proxy.context:
-            row["changedAt"] = proxy.context["last_change"]
-
         featured = proxy.schema.featured
         for prop in proxy.schema.sorted_properties:
             if prop.hidden:
