@@ -9,10 +9,10 @@ data:
 	mkdir -p data/
 
 data/graph.json: data
-	wget -q -c -O data/graph.json https://data.opensanctions.org/contrib/graph/graph.json
+	wget -q -c -O data/graph.json https://mirror.opensanctions.net/datasets/latest/graph/entities.ftm.json
 
 data/opensanctions.json: data
-	wget -q -c -O data/opensanctions.json https://data.opensanctions.org/datasets/latest/default/entities.ftm.json
+	curl -o data/opensanctions.json https://mirror.opensanctions.net/datasets/latest/default/entities.ftm.json
 
 data/dedupe:
 	mkdir -p data/dedupe
@@ -44,6 +44,9 @@ convert-dev: data/opensanctions.json
 	python export.py -p http://localhost:9999/exports data/opensanctions.json
 
 dev: convert-dev dedupe
+
+dev-serve:
+	cd data && python -m http.server 9999
 
 clean:
 	rm -f data/graph.json

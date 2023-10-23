@@ -14,7 +14,22 @@ from followthemoney.cli.util import path_entities
 log = logging.getLogger("make_graph")
 
 ENTITY_LABEL = "Entity"
+QPREFIX = ":auto "
 
+TOPIC_ALIAS = {
+    "gov.soe": "StateOwnedEnterprise",
+    "gov.igo": "InterGovernmental",
+    "gov.head": "HeadOfState",
+    "gov.executive": "Executive",
+    "gov.legislative": "Legislative",
+    "gov.judicial": "Judicial",
+    "gov.financial": "CentralBanking",
+    "role.rca": "CloseAssociate",
+    "role.pep": "Politician",
+    "poi": "PersonOfInterest",
+    "sanction": "Sanctioned",
+    "sanction.linked": "SanctionLinked",
+}
 
 TYPES_INLINE = (
     registry.name,
@@ -127,7 +142,8 @@ class LabelWriter(object):
         labels = self.get_all_labels("n")
         setters = self.get_setters("n")
         node_label = f":{self.node_label}" if self.node_label else ""
-        return f"""LOAD CSV WITH HEADERS FROM '{prefix}/{self.file_name}' AS row
+        return f"""{QPREFIX}LOAD CSV WITH HEADERS
+            FROM '{prefix}/{self.file_name}' AS row
             WITH row WHERE row.id IS NOT NULL
             call {{ with row
             MERGE (n{node_label} {{ id: row.id }})
@@ -139,7 +155,8 @@ class LabelWriter(object):
         setters = self.get_setters("r")
         source_label = f":{self.source_label}" if self.source_label else ""
         target_label = f":{self.target_label}" if self.target_label else ""
-        return f"""LOAD CSV WITH HEADERS FROM '{prefix}/{self.file_name}' AS row
+        return f"""{QPREFIX}LOAD CSV WITH HEADERS
+            FROM '{prefix}/{self.file_name}' AS row
             WITH row WHERE row.source_id IS NOT NULL AND row.target_id IS NOT NULL
             call {{ with row 
             MATCH (s{source_label} {{id: row.source_id}})
@@ -238,14 +255,15 @@ class GraphExporter(object):
         # TODO: make topics into extra labels
         topics = proxy.get_type_values(registry.topic)
         for topic in topics:
-            topic_label = registry.topic.caption(topic)
-            if topic_label is None:
-                continue
-            topic_label = topic_label.replace(" ", "_")
-            topic_label = stringcase.pascalcase(topic_label)
+            if topic in TOPIC_ALIAS:
+                topic_label = TOPIC_ALIAS.get(topic)
+            else:
+                topic_label = registry.topic.caption(topic)
+                if topic_label is None:
+                    continue
+                topic_label = topic_label.replace(" ", "_")
+                topic_label = stringcase.pascalcase(topic_label)
             # Work-around to name overlap
-            if topic == "role.rca":
-                topic_label = "CloseAssociate"
             if topic_label is None:
                 continue
             topic_row = {"id": proxy.id, "caption": proxy._caption}
@@ -294,6 +312,9 @@ class GraphExporter(object):
                 )
 
     def handle_entity(self, proxy: Entity):
+        # Skip out the PEP metadata:
+        if proxy.schema.name in ("Occupancy", "Position"):
+            return
         if proxy.schema.edge:
             self.handle_edge_proxy(proxy)
         else:
@@ -336,13 +357,12 @@ class GraphExporter(object):
 
             # prune useless nodes and labels
             for type in TYPES_REIFY:
-                fh.write(
-                    f"MATCH (n:{type.name}) WITH "
-                    + "n, size([p=(n)--() | p]) as size "
-                    + "WHERE size <= 1 call "
-                    + "{ with n DETACH DELETE (n) } "
-                    + "in transactions of 50000 rows;"
-                )
+                query = f"""{QPREFIX}MATCH (n:{type.name})
+                    WITH n, size([p=(n)--() | p]) as size
+                    WHERE size <= 1 call {{ with n DETACH DELETE (n) }}
+                    in transactions of 50000 rows;
+                """
+                fh.write(query)
                 # fh.write(
                 #     f"MATCH (n:{type.name}) "
                 #     + "WHERE size((n)--()) <= 1 "
