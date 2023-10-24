@@ -90,6 +90,13 @@ RETURN p;
 ```
 
 ```
+MATCH p = (s:Sanctioned)-[:OWNERSHIP]-(c)
+    WHERE NOT c:Sanctioned
+WITH p LIMIT 10
+RETURN p;
+```
+
+```
 MATCH p = (s:Politician)-[*..4]-(t)-[:PAYMENT]-(c)
     WHERE NONE(x IN nodes(p)[1..-1] WHERE (x:FinancialCrime OR x:Address))
     AND NONE(y IN relationships(p)[1..-1] WHERE (y:PAYMENT))
