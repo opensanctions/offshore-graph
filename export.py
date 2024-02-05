@@ -193,7 +193,11 @@ class GraphExporter(object):
         node_row = {"id": node_id, "caption": type.caption(value)}
         self.emit_label_row(node_row, type.name, node_label=type.name)
 
-        link_row = {"source_id": proxy.id, "target_id": node_id}
+        link_row = {
+            "source_id": proxy.id,
+            "target_id": node_id,
+            "source": "; ".join(proxy.context.get("datasets", [])),
+        }
         link_label = stringcase.constcase(type.name)
         link_label = f"HAS_{link_label}"
         self.emit_label_row(
@@ -232,7 +236,11 @@ class GraphExporter(object):
             # TODO: make plain entity links
             if prop.type == registry.entity:
                 for value in values:
-                    link_row = {"source_id": proxy.id, "target_id": value}
+                    link_row = {
+                        "source_id": proxy.id,
+                        "target_id": value,
+                        "source": "; ".join(proxy.context.get("datasets", [])),
+                    }
                     link_label = stringcase.constcase(prop.name)
                     self.emit_label_row(
                         link_row,
@@ -293,6 +301,8 @@ class GraphExporter(object):
                     "source_id": source,
                     "target_id": target,
                     "caption": proxy._caption,
+                    "source": "; ".join(proxy.context.get("datasets", [])),
+                    "sourceID": "; ".join(proxy.context.get("referents", [])),
                 }
                 for prop_name in proxy.schema.featured:
                     prop = proxy.schema.get(prop_name)
