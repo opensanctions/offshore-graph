@@ -29,6 +29,9 @@ TOPIC_ALIAS = {
     "poi": "PersonOfInterest",
     "sanction": "Sanctioned",
     "sanction.linked": "SanctionLinked",
+    "sanction.counter": "CounterSanctioned",
+    "export.control": "ExportControlled",
+    "export.risk": "TradeRisk",
 }
 
 TYPES_INLINE = (
@@ -368,10 +371,14 @@ class GraphExporter(object):
             # prune useless nodes and labels
             for type in TYPES_REIFY:
                 query = f"""{QPREFIX}MATCH (n:{type.name})
-                    WITH n, size([p=(n)--() | p]) as size
-                    WHERE size <= 1 call {{ with n DETACH DELETE (n) }}
+                    WHERE apoc.node.degree((n)) <= 1 call {{ with n DETACH DELETE (n) }}
                     in transactions of 50000 rows;
                 """
+                # query = f"""{QPREFIX}MATCH (n:{type.name})
+                #     WITH n, size([p=(n)--() | p]) as size
+                #     WHERE size <= 1 call {{ with n DETACH DELETE (n) }}
+                #     in transactions of 50000 rows;
+                # """
                 fh.write(query)
                 # fh.write(
                 #     f"MATCH (n:{type.name}) "
