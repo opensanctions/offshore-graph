@@ -22,7 +22,7 @@ publish:
 
 # OpenScreening big graph
 data/graph.json: data
-	wget -q -c -O data/graph.json https://mirror.opensanctions.net/datasets/latest/graph/entities.ftm.json
+	wget -q -c -O data/graph.json https://data.opensanctions.org/datasets/latest/graph/entities.ftm.json
 
 openscreening: data/graph.json
 	python export.py -p https://data.opensanctions.org/contrib/offshore-graph/exports data/graph.json
