@@ -17,8 +17,18 @@ serve:
 convert: data/opensanctions.json
 	python export.py -p https://data.opensanctions.org/contrib/neo4j/exports data/opensanctions.json
 
-publish: convert
+publish:
 	gsutil cp -r data/exports/* gs://data.opensanctions.org/contrib/neo4j/exports
+
+# OpenScreening big graph
+data/graph.json: data
+	wget -q -c -O data/graph.json https://mirror.opensanctions.net/datasets/latest/graph/entities.ftm.json
+
+openscreening: data/graph.json
+	python export.py -p https://data.opensanctions.org/contrib/offshore-graph/exports data/graph.json
+
+openscreening-publish:
+	gsutil cp -r data/exports/* gs://data.opensanctions.org/contrib/offshore-graph/exports
 
 clean:
 	rm -f data/graph.json
@@ -27,9 +37,8 @@ clean:
 	rm -rf data/exports
 
 
-# OpenScreening big graph
-data/graph.json: data
-	wget -q -c -O data/graph.json https://mirror.opensanctions.net/datasets/latest/graph/entities.ftm.json
+
+### Outdated, ignore:
 
 data/dedupe:
 	mkdir -p data/dedupe
@@ -50,9 +59,3 @@ openscreening-dedupe:
 	rm -rf data/dedupe
 	mkdir -p data/dedupe
 	make -B data/exports/*.csv
-
-openscreening: data/graph.json
-	python export.py -p https://data.opensanctions.org/contrib/offshore-graph/exports data/graph.json
-
-publish-openscreening:
-	aws s3 sync --no-progress --cache-control "public, max-age=84600" --metadata-directive REPLACE --acl public-read data/exports s3://data.opensanctions.org/contrib/offshore-graph/exports

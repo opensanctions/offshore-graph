@@ -29,10 +29,10 @@ After the data has loaded into Neo4J, connect your [Linkurious instance](https:/
 
 ```cypher
 //Clean orphan nodes
-:auto MATCH (n:identifier) WITH n, size([p=(n)--() | p]) as size WHERE size <= 1 call { with n     DETACH DELETE (n) } in transactions of 50000 rows;
-:auto MATCH (n:email) WITH n, size([p=(n)--() | p]) as size WHERE size <= 1 call { with n     DETACH DELETE (n) } in transactions of 50000 rows;
-:auto MATCH (n:phone) WITH n, size([p=(n)--() | p]) as size WHERE size <= 1 call { with n     DETACH DELETE (n) } in transactions of 50000 rows;
-:auto MATCH (n:name) WITH n, size([p=(n)--() | p]) as size WHERE size <= 1 call { with n     DETACH DELETE (n) } in transactions of 50000 rows;
+:auto MATCH (n:identifier) WHERE apoc.node.degree((n)) <= 1 call { with n     DETACH DELETE (n) } in transactions of 50000 rows;
+:auto MATCH (n:email) WHERE apoc.node.degree((n)) <= 1 call { with n     DETACH DELETE (n) } in transactions of 50000 rows;
+:auto MATCH (n:phone) WHERE apoc.node.degree((n)) <= 1 call { with n     DETACH DELETE (n) } in transactions of 50000 rows;
+:auto MATCH (n:name) WHERE apoc.node.degree((n)) <= 1 call { with n     DETACH DELETE (n) } in transactions of 50000 rows;
   
 // clean empty properties
 CALL apoc.periodic.iterate(
