@@ -17,8 +17,8 @@ ENTITY_LABEL = "Entity"
 QPREFIX = ":auto "
 
 TOPIC_ALIAS = {
-    "gov.soe": "StateOwnedEnterprise",
-    "gov.igo": "InterGovernmental",
+    "gov.soe": "SOE",
+    "gov.igo": "IGO",
     "gov.head": "HeadOfState",
     "gov.executive": "Executive",
     "gov.legislative": "Legislative",
@@ -46,6 +46,7 @@ TYPES_REIFY = (
     # registry.country,
     # registry.iban,
     registry.url,
+    registry.identifier,
     registry.email,
     registry.phone,
     registry.identifier,
